@@ -1,5 +1,21 @@
-from bert_models import get_transformer_encoder
+# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""BERT ranker models that are compatible with TF 2.0."""
+
 import tensorflow as tf
+from official.nlp.bert.bert_models import get_transformer_encoder
 
 def ranker_model(bert_config,
                    seq_length,
@@ -26,15 +42,15 @@ def ranker_model(bert_config,
       shape=(seq_length,), name='input1_word_ids', dtype=tf.int32)
   input1_mask = tf.keras.layers.Input(
       shape=(seq_length,), name='input1_mask', dtype=tf.int32)
-  #input1_type_ids = tf.keras.layers.Input(
-  #    shape=(seq_length,), name='input1_type_ids', dtype=tf.int32)
+  input1_type_ids = tf.keras.layers.Input(
+      shape=(seq_length,), name='input1_type_ids', dtype=tf.int32)
 
   input2_word_ids = tf.keras.layers.Input(
       shape=(seq_length,), name='input2_word_ids', dtype=tf.int32)
   input2_mask = tf.keras.layers.Input(
       shape=(seq_length,), name='input2_mask', dtype=tf.int32)
-  #input2_type_ids = tf.keras.layers.Input(
-  #    shape=(seq_length,), name='input2_type_ids', dtype=tf.int32)
+  input2_type_ids = tf.keras.layers.Input(
+      shape=(seq_length,), name='input2_type_ids', dtype=tf.int32)
 
   transformer_encoder = get_transformer_encoder(bert_config, seq_length)
   if initializer is None:
@@ -44,8 +60,6 @@ def ranker_model(bert_config,
   # [<tf.Tensor 'input_word_ids:0' shape=(None, 64) dtype=int32>,
   #  <tf.Tensor 'input_mask:0' shape=(None, 64) dtype=int32>,
   #  <tf.Tensor 'input_type_ids:0' shape=(None, 64) dtype=int32>]
-  input1_type_ids = tf.zeros_like(input1_word_ids)
-  input2_type_ids = tf.ones_like(input2_word_ids)
   _, cls_output1 = transformer_encoder([input1_word_ids, input1_mask, input1_type_ids])
   _, cls_output2 = transformer_encoder([input2_word_ids, input2_mask, input2_type_ids])
 
@@ -54,10 +68,10 @@ def ranker_model(bert_config,
   inputs = {
       'input1_ids': input1_word_ids,
       'input1_mask': input1_mask,
-      #'input1_type_ids': input1_type_ids,
+      'input1_type_ids': input1_type_ids,
       'input2_ids': input2_word_ids,
       'input2_mask': input2_mask,
-      #'input2_type_ids': input2_type_ids,
+      'input2_type_ids': input2_type_ids,
   }
 
   keras_model = tf.keras.Model(inputs=inputs, outputs=output_scores)
