@@ -158,8 +158,9 @@ def create_ranker_dataset(input_patterns,
     return dataset
 
   assert len(input_patterns) == 4
-  input1_type_ids = [0, 1, 0, 0]
-  input2_type_ids = [0, 1, 1, 1]
+  input_patterns = input_patterns + input_patterns
+  input1_type_ids = [0, 0, 0, 0, 1, 1, 0, 0]
+  input2_type_ids = [0, 0, 1, 1, 1, 1, 1, 1]
 
   dataset = tf.data.Dataset.from_tensor_slices(
     (tf.constant(input_patterns, dtype=tf.string),
