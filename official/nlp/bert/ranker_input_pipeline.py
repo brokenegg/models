@@ -129,8 +129,8 @@ def create_ranker_dataset(input_patterns,
 
     def _select_data_from_record(record):
       """Filter out features to use for pretraining."""
-      inputs = tf.concat(tf.constant([1], dtype=tf.int64), record['inputs'])
-      targets = tf.concat(tf.constant([1], dtype=tf.int64), record['targets'])
+      inputs = tf.concat([tf.constant([1], dtype=tf.int64), record['inputs']], axis=0)
+      targets = tf.concat([tf.constant([1], dtype=tf.int64), record['targets']], axis=0)
       x = {
           'input1_ids': inputs,
           'input1_mask': tf.ones_like(inputs),
