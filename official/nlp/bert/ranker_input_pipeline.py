@@ -64,8 +64,8 @@ def _load_records(filename):
 
 def _filter_max_length(example, max_length=256):
   """Indicates whether the example's length is lower than the maximum length."""
-  return tf.logical_and(tf.size(example['inputs']) <= max_length,
-                        tf.size(example['targets']) <= max_length)
+  return tf.logical_and(tf.size(example['input1_ids']) <= max_length,
+                        tf.size(example['input2_ids']) <= max_length)
 
 
 def create_ranker_dataset(input_patterns,
@@ -92,8 +92,8 @@ def create_ranker_dataset(input_patterns,
                               append_input1_to_input2):
     """Creates input dataset from (tf)records files for pretraining."""
     name_to_features = {
-        "input1_ids": tf.io.VarLenFeature(tf.int64),
-        "input2_ids": tf.io.VarLenFeature(tf.int64)
+        "inputs": tf.io.VarLenFeature(tf.int64),
+        "targets": tf.io.VarLenFeature(tf.int64)
     }
 
     dataset = tf.data.Dataset.list_files(input_pattern, shuffle=is_training)
