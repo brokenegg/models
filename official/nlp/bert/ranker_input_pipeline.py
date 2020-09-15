@@ -162,7 +162,7 @@ def create_ranker_dataset(input_patterns,
       input2_ids = example['input2_ids']
       input2_mask = example['input2_mask']
       input2_type_ids = example['input2_type_ids']
-      if append_input1_to_input2:
+      if True: #append_input1_to_input2:
         input2_ids = tf.concat([input2_ids, input1_ids], axis=0)
         input2_mask = tf.concat([input2_mask, input1_mask], axis=0)
         input2_type_ids = tf.concat([input2_type_ids, input1_type_ids], axis=0)
