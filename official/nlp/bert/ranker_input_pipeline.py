@@ -86,9 +86,10 @@ def create_ranker_dataset(input_patterns,
     input_files.extend(tf.io.gfile.glob(input_pattern))
   shuffle_buffer_size = len(input_files)
 
-  def map_func(input_pattern,
-               input1_type_id,
-               input2_type_id):
+  def _create_dataset_internal(input_pattern,
+                              input1_type_id,
+                              input2_type_id,
+                              append_input1_to_input2):
     """Creates input dataset from (tf)records files for pretraining."""
     name_to_features = {
         "inputs": tf.io.VarLenFeature(tf.int64),
@@ -128,13 +129,15 @@ def create_ranker_dataset(input_patterns,
 
     def _select_data_from_record(record):
       """Filter out features to use for pretraining."""
+      inputs = tf.concat(tf.constant([1], dtype=tf.int64), record['inputs'])
+      targets = tf.concat(tf.constant([1], dtype=tf.int64), record['targets'])
       x = {
-          'input1_ids': record['inputs'],
-          'input1_mask': tf.ones_like(record['inputs']),
-          'input1_type_ids': tf.ones_like(record['inputs']) * input1_type_id,
-          'input2_ids': record['targets'],
-          'input2_mask': tf.ones_like(record['targets']) * input2_type_id,
-          'input2_type_ids': tf.ones_like(record['targets']),
+          'input1_ids': inputs,
+          'input1_mask': tf.ones_like(inputs),
+          'input1_type_ids': tf.ones_like(inputs),
+          'input2_ids': targets,
+          'input2_mask': tf.ones_like(targets),
+          'input2_type_ids': tf.ones_like(targets),
       }
       return x
 
@@ -151,24 +154,50 @@ def create_ranker_dataset(input_patterns,
           'input2_type_ids': [seq_length],
         },
         drop_remainder=is_training)
+
+    def _may_append_input1_to_input2(example):
+      input1_ids = example['input1_ids']
+      input1_mask = example['input1_mask']
+      input1_type_ids = example['input1_type_ids']
+      input2_ids = example['input2_ids']
+      input2_mask = example['input2_mask']
+      input2_type_ids = example['input2_type_ids']
+      if append_input1_to_input2:
+        input2_ids = tf.concat([input2_ids, input1_ids], axis=0)
+        input2_mask = tf.concat([input2_mask, input1_mask], axis=0)
+        input2_type_ids = tf.concat([input2_type_ids, input1_type_ids], axis=0)
+
+      return {
+          'input1_ids': input1_ids,
+          'input1_mask': input1_mask,
+          'input1_type_ids': input1_type_ids * input1_type_id,
+          'input2_ids': input2_ids,
+          'input2_mask': input2_mask,
+          'input2_type_ids': input2_type_ids * input2_type_id,
+      }
+
+    dataset = dataset.map(_may_append_input1_to_input2)
     dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
     dataset = dataset.map(
         lambda example: (example, tf.range(tf.shape(example['input1_ids'])[0])),
         num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
     return dataset
 
   assert len(input_patterns) == 4
-  input_patterns = input_patterns + input_patterns
-  input1_type_ids = [0, 0, 0, 0, 1, 1, 0, 0]
-  input2_type_ids = [0, 0, 1, 1, 1, 1, 1, 1]
+  input_patterns = input_patterns
+  input1_type_ids = [0, 0, 0, 0]
+  input2_type_ids = [0, 0, 1, 1]
+  append_input1_to_input2 = [False, False, True, True]
 
   dataset = tf.data.Dataset.from_tensor_slices(
     (tf.constant(input_patterns, dtype=tf.string),
      tf.constant(input1_type_ids, dtype=tf.int32),
      tf.constant(input2_type_ids, dtype=tf.int32),
+     tf.constant(append_input1_to_input2, dtype=tf.bool),
      ))
 
-  dataset = dataset.interleave(map_func, cycle_length=4, block_length=1)
+  dataset = dataset.interleave(_create_dataset_internal, cycle_length=4, block_length=1)
 
   return dataset
 
