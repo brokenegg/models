@@ -124,9 +124,6 @@ def create_ranker_dataset(input_patterns,
     dataset = dataset.map(
         decode_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
-    # Remove examples where the input or target length exceeds the maximum length,
-    dataset = dataset.filter(lambda example: _filter_max_length(example, seq_length))
-
     def _select_data_from_record(record):
       """Filter out features to use for pretraining."""
       inputs = tf.concat([tf.constant([1], dtype=tf.int32), record['inputs']], axis=0)
@@ -144,6 +141,10 @@ def create_ranker_dataset(input_patterns,
     dataset = dataset.map(
         _select_data_from_record,
         num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+    # Remove examples where the input or target length exceeds the maximum length,
+    dataset = dataset.filter(lambda example: _filter_max_length(example, seq_length))
+
     dataset = dataset.padded_batch(batch_size,
         {
           'input1_ids': [seq_length],
