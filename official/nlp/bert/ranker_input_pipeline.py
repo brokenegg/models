@@ -92,8 +92,8 @@ def create_ranker_dataset(input_patterns,
                               append_input1_to_input2):
     """Creates input dataset from (tf)records files for pretraining."""
     name_to_features = {
-        "inputs": tf.io.VarLenFeature(tf.int64),
-        "targets": tf.io.VarLenFeature(tf.int64)
+        "input1_ids": tf.io.VarLenFeature(tf.int64),
+        "input2_ids": tf.io.VarLenFeature(tf.int64)
     }
 
     dataset = tf.data.Dataset.list_files(input_pattern, shuffle=is_training)
